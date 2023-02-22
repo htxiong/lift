@@ -1,32 +1,68 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/2.0/configuration-reference
-version: 2.1
+name: CI
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+on:
+    push:
+        branches: [master]
+    pull_request:
+    schedule:
+        - cron: "0 0 * * *"
+
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
-    steps:
-      - checkout
-      - run:
-          name: "npm install"
-          command: "npm install"
-      - run:
-          name: "build the pack"
-          command: "npm run prepare"
-      - run:
-          name: "run test"
-          command: "npm test"
-
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
-workflows:
-  say-hello-workflow:
-    jobs:
-      - say-hello
+    unit-tests:
+        name: Unit tests
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node:
+                    - 14
+                    - 16
+                    - 18
+                serverless:
+                    - "2.36.0"
+                    - "2"
+                    - "latest"
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-node@v2
+              with:
+                  node-version: ${{ matrix.node }}
+            - uses: actions/cache@v2
+              with:
+                  path: ~/.npm
+                  key: ${{ runner.os }}-node-${{ matrix.node }}-${{ hashFiles('**/package.json') }}
+            - run: npm i
+            - run: npm i serverless@${{ matrix.serverless }}
+            - run: npm i @serverless/test@8
+              # Only install @serverless/test@8 for Serverless v2
+              if: matrix.serverless != 'latest'
+            - run: npm test
+    lint:
+        name: Lint
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-node@v2
+              with:
+                  node-version: 16
+            - uses: actions/cache@v2
+              with:
+                  path: ~/.npm
+                  key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
+            - run: npm i
+            - run: npm run check-format
+            - run: npm run lint
+    type:
+        name: Type
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-node@v2
+              with:
+                  node-version: 16
+            - uses: actions/cache@v2
+              with:
+                  path: ~/.npm
+                  key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
+            - run: npm i
+            - name: Typescript checks
+              run: tsc --noEmit
