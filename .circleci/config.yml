@@ -1,68 +1,21 @@
-name: CI
+# This config is equivalent to both the '.circleci/extended/orb-free.yml' and the base '.circleci/config.yml'
+version: 2.1
 
-on:
-    push:
-        branches: [master]
-    pull_request:
-    schedule:
-        - cron: "0 0 * * *"
+# Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
+# See: https://circleci.com/docs/2.0/orb-intro/
+orbs:
+  node: circleci/node@4.7
 
-jobs:
-    unit-tests:
-        name: Unit tests
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                node:
-                    - 14
-                    - 16
-                    - 18
-                serverless:
-                    - "2.36.0"
-                    - "2"
-                    - "latest"
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
-              with:
-                  node-version: ${{ matrix.node }}
-            - uses: actions/cache@v2
-              with:
-                  path: ~/.npm
-                  key: ${{ runner.os }}-node-${{ matrix.node }}-${{ hashFiles('**/package.json') }}
-            - run: npm i
-            - run: npm i serverless@${{ matrix.serverless }}
-            - run: npm i @serverless/test@8
-              # Only install @serverless/test@8 for Serverless v2
-              if: matrix.serverless != 'latest'
-            - run: npm test
-    lint:
-        name: Lint
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
-              with:
-                  node-version: 16
-            - uses: actions/cache@v2
-              with:
-                  path: ~/.npm
-                  key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
-            - run: npm i
-            - run: npm run check-format
-            - run: npm run lint
-    type:
-        name: Type
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
-              with:
-                  node-version: 16
-            - uses: actions/cache@v2
-              with:
-                  path: ~/.npm
-                  key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
-            - run: npm i
-            - name: Typescript checks
-              run: tsc --noEmit
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  sample: # This is the name of the workflow, feel free to change it to better match your workflow.
+    # Inside the workflow, you define the jobs you want to run.
+    jobs:
+      - node/test:
+          # This is the node version to use for the `cimg/node` tag
+          # Relevant tags can be found on the CircleCI Developer Hub
+          # https://circleci.com/developer/images/image/cimg/node
+          version: '16.10'
+          # If you are using yarn, change the line below from "npm" to "yarn"
+          pkg-manager: npm
