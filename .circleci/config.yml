@@ -24,7 +24,7 @@ jobs:
         name: Checking for package.json
         working_directory: ~/project
     - run:
-        command: npm run install && npm run prepare
+        command: npm i && npm run prepare
         name: Installing NPM packages
         working_directory: ~/project
     - save_cache:
