@@ -16,13 +16,13 @@ jobs:
       - checkout
       - run:
           name: "npm install"
-          command: "install"
+          command: "npm install"
       - run:
-          name: "run prepare"
-          command: "build"
+          name: "build the pack"
+          command: "npm run prepare"
       - run:
           name: "run test"
-          command: "test"
+          command: "npm test"
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
